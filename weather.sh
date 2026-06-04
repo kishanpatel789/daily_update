@@ -23,20 +23,21 @@ fi
 
 CACHE_CURRENT="$CACHE_DIR/current_weather.json"
 
-if [ ! -f $CACHE_CURRENT ] || [[ ! $(find $CACHE_CURRENT -mmin -1) ]]; then
-  echo "need to call api"
+# TODO: update cache threshold to 15 minutes
+
+if [ ! -f $CACHE_CURRENT ] || [[ ! $(find $CACHE_CURRENT -mmin -5) ]]; then
+  echo "Refreshing current weather cache..."
+  URL="${BASE_URL}/weather?lat=${LAT}&lon=${LON}&appid=${API_KEY}&units=${UNITS}"
+  curl -so $CACHE_CURRENT $URL
 fi
 
-#echo $NUM_DAYS
+
+# repeat cache check for forecast
+
+# parse current weather with jq and print
+# parse forecast weather with jq and print
 
 
-# echo $(pwd)
-# echo $0
-
-
-# if [ -z $BLAH ]; then 
-  # echo "not found"
-# fi
 
 # cat current_weather.json | jq '.dt' | xargs -I{} date -d @{}
 
