@@ -22,15 +22,20 @@ if [ ! -d $CACHE_DIR ]; then
 fi
 
 CACHE_CURRENT="$CACHE_DIR/current_weather.json"
+CACHE_FORECAST="$CACHE_DIR/forecast_weather.json"
 
-# TODO: update cache threshold to 15 minutes
-
-# if [ ! -f $CACHE_CURRENT ] || [[ ! $(find $CACHE_CURRENT -mmin -5) ]]; then
+# if [ ! -f $CACHE_CURRENT ] || [[ ! $(find $CACHE_CURRENT -mmin -$CACHE_TTL) ]]; then
   # echo "Refreshing current weather cache..."
   # URL="${BASE_URL}/weather?lat=${LAT}&lon=${LON}&appid=${API_KEY}&units=${UNITS}"
   # curl -so $CACHE_CURRENT $URL
 # fi
 
+# if [ ! -f $CACHE_FORECAST ] || [[ ! $(find $CACHE_FORECAST -mmin -$CACHE_TTL) ]]; then
+  # echo "Refreshing forecast weather cache..."
+  # URL="${BASE_URL}/forecast?lat=${LAT}&lon=${LON}&appid=${API_KEY}&units=${UNITS}&cnt=$[$NUM_DAYS*8]"
+  # echo "$URL"
+  # curl -so $CACHE_FORECAST $URL
+# fi
 
 
 # repeat cache check for forecast
@@ -40,18 +45,22 @@ CACHE_CURRENT="$CACHE_DIR/current_weather.json"
 
 
 
-jq '.dt' $CACHE_CURRENT | xargs -I{} date -d @{}
+jq '.dt' $CACHE_CURRENT | xargs -I{} date -d @{} +"%Y.%m.%d %H:%M"
 
-jq -r '"
-\(.weather[0].main) - \(.weather[0].description)
-\(.main.temp) Celcius
-\(.clouds.all)% cloudy
-"' $CACHE_CURRENT
+echo ""
+
+jq -r '[
+  "\(.weather[0].main) - \(.weather[0].description)",
+  "\(.main.temp) Celcius",
+  "\(.clouds.all)% cloudy",
+  "\(.wind.speed * 3.6 | round) km/h from \(.wind.deg) deg",
+  if .rain["1h"] then "\(.rain["1h"]) mm/h rain" else empty end,
+  if .snow["1h"] then "\(.snow["1h"]) mm/h snow" else empty end
+] | .[]
+' $CACHE_CURRENT
 
 #cat current_weather.json | jq -r '"\(.weather[0].main) - \(.weather[0].description)"'
 
 # cat current_weather.json | jq -r '"\(.weather[0].main) - \(.weather[0].description)\n"'
 # cat current_weather.json | jq -r '"\(.main.temp) Celcius"'
 # cat current_weather.json | jq -r '"\(.clouds.all)% cloudy"'
-# 
-# # check if rain.1h and snow.1h are present as keys; if so, print
