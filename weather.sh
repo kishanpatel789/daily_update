@@ -24,18 +24,17 @@ fi
 CACHE_CURRENT="$CACHE_DIR/current_weather.json"
 CACHE_FORECAST="$CACHE_DIR/forecast_weather.json"
 
-# if [ ! -f $CACHE_CURRENT ] || [[ ! $(find $CACHE_CURRENT -mmin -$CACHE_TTL) ]]; then
-  # echo "Refreshing current weather cache..."
-  # URL="${BASE_URL}/weather?lat=${LAT}&lon=${LON}&appid=${API_KEY}&units=${UNITS}"
-  # curl -so $CACHE_CURRENT $URL
-# fi
+if [ ! -f $CACHE_CURRENT ] || [[ ! $(find $CACHE_CURRENT -mmin -$CACHE_TTL) ]]; then
+  echo "Refreshing current weather cache..."
+  URL="${BASE_URL}/weather?lat=${LAT}&lon=${LON}&appid=${API_KEY}&units=${UNITS}"
+  curl -so $CACHE_CURRENT $URL
+fi
 
-# if [ ! -f $CACHE_FORECAST ] || [[ ! $(find $CACHE_FORECAST -mmin -$CACHE_TTL) ]]; then
-  # echo "Refreshing forecast weather cache..."
-  # URL="${BASE_URL}/forecast?lat=${LAT}&lon=${LON}&appid=${API_KEY}&units=${UNITS}&cnt=$[$NUM_DAYS*8]"
-  # echo "$URL"
-  # curl -so $CACHE_FORECAST $URL
-# fi
+if [ ! -f $CACHE_FORECAST ] || [[ ! $(find $CACHE_FORECAST -mmin -$CACHE_TTL) ]]; then
+  echo "Refreshing forecast weather cache..."
+  URL="${BASE_URL}/forecast?lat=${LAT}&lon=${LON}&appid=${API_KEY}&units=${UNITS}&cnt=$[$NUM_DAYS*8]"
+  curl -so $CACHE_FORECAST $URL
+fi
 
 
 # repeat cache check for forecast
@@ -51,13 +50,24 @@ echo ""
 
 jq -r '[
   "\(.weather[0].main) - \(.weather[0].description)",
-  "\(.main.temp) Celcius",
+  "\(.main.temp)°C",
   "\(.clouds.all)% cloudy",
   "\(.wind.speed * 3.6 | round) km/h from \(.wind.deg) deg",
   if .rain["1h"] then "\(.rain["1h"]) mm/h rain" else empty end,
   if .snow["1h"] then "\(.snow["1h"]) mm/h snow" else empty end
 ] | .[]
 ' $CACHE_CURRENT
+
+echo ""
+
+#jq -r '.list[] | "\(.dt | localtime)\t\(.main.temp | round)°C"' forecast_weather.json
+
+jq -r '
+.city.timezone as $tz
+| .list[] 
+| "\((.dt + $tz) | strftime("%a %H:%M"))\t\(.main.temp | round)°C \(.weather[0].main)"
+' forecast_weather.json
+
 
 #cat current_weather.json | jq -r '"\(.weather[0].main) - \(.weather[0].description)"'
 
