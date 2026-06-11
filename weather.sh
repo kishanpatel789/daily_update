@@ -65,7 +65,7 @@ echo ""
 jq -r '
 .city.timezone as $tz
 | .list[] 
-| "\((.dt + $tz) | strftime("%a %H:%M"))\t\(.main.temp | round)°C \(.weather[0].main)"
+| "\((.dt + $tz) | strftime("%a %H:%M"))\t\(.main.temp | round)°C \(.weather[0].main) (\(.pop * 100 | round))%"
 ' forecast_weather.json
 
 
